@@ -1368,6 +1368,7 @@ func HandlePDUSessionResourceSetupRequest(amf *context.N3IWFAMF, message *ngapTy
 	var amfUeNgapID *ngapType.AMFUENGAPID
 	var ranUeNgapID *ngapType.RANUENGAPID
 	var nasPDU *ngapType.NASPDU
+	var pduSessionNasPdu *ngapType.NASPDU	
 	var pduSessionResourceSetupListSUReq *ngapType.PDUSessionResourceSetupListSUReq
 	var iesCriticalityDiagnostics ngapType.CriticalityDiagnosticsIEList
 
@@ -1480,6 +1481,7 @@ func HandlePDUSessionResourceSetupRequest(amf *context.N3IWFAMF, message *ngapTy
 			pduSessionID := item.PDUSessionID.Value
 			// TODO: send NAS to UE
 			// pduSessionNasPdu := item.NASPDU
+			pduSessionNasPdu = item.PDUSessionNASPDU
 			snssai := item.SNSSAI
 
 			transfer := ngapType.PDUSessionResourceSetupRequestTransfer{}
@@ -1516,6 +1518,22 @@ func HandlePDUSessionResourceSetupRequest(amf *context.N3IWFAMF, message *ngapTy
 		}
 	}
 
+	if pduSessionNasPdu != nil {
+		// TODO: Send NAS to UE
+		if n3iwfUe.TCPConnection == nil {
+			ngapLog.Error("No IPSec NAS signalling SA for this UE")
+			return
+		} else {
+			if n, err := n3iwfUe.TCPConnection.Write(pduSessionNasPdu.Value); err != nil {
+				ngapLog.Errorf("Send NAS to UE failed: %+v", err)
+				return
+			} else {
+				ngapLog.Tracef("Wrote %d bytes", n)
+			}
+		}
+	}
+
+	
 	if n3iwfUe.TemporaryPDUSessionSetupData != nil {
 		for {
 			if len(n3iwfUe.TemporaryPDUSessionSetupData.UnactivatedPDUSession) != 0 {
